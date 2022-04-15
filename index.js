@@ -14,10 +14,13 @@ module.exports = (app) => {
   });
 
   app.on("issue_comment.created", async (context) => {
-    const issueComment = context.issue({
-      body: "Thanks for the comment!",
-    });
-    return context.octokit.issues.createComment(issueComment);
+    // only reply to comments from actual users and not the bot.
+    if (!context.payload.comment.user.login.includes("simple-gh-app")) {
+      const issueComment = context.issue({
+        body: "Thank you for the comment!",
+      });
+      return context.octokit.issues.createComment(issueComment);
+    }
   });
 
   app.on("issue_comment.deleted", async (context) => {
