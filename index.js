@@ -6,11 +6,15 @@ module.exports = (app) => {
   // Your code here
   app.log.info("Yay, the app was loaded!");
 
+  // ---------- ISSUE EVENTS ----------
   app.on("issues.opened", async (context) => {
-    const issueComment = context.issue({
-      body: "Thanks for opening this issue!",
-    });
-    return context.octokit.issues.createComment(issueComment);
+    // only reply to issues from actual users and not the bot.
+    if (!context.payload.comment.user.login.includes("simple-gh-app")) {
+      const issueComment = context.issue({
+        body: "Thanks for opening this issue!",
+      });
+      return context.octokit.issues.createComment(issueComment);
+    }
   });
 
   app.on("issue_comment.created", async (context) => {
@@ -29,10 +33,21 @@ module.exports = (app) => {
     });
     return context.octokit.issues.createComment(issueComment);
   });
+  // ---------- END ISSUE EVENTS ----------
 
-  // For more information on building apps:
-  // https://probot.github.io/docs/
-
-  // To get your app running against GitHub, see:
-  // https://probot.github.io/docs/development/
+  // ---------- REPO EVENTS ----------
+  app.on("repository.created", async (context) => {
+    const repo = context.payload.repository;
+    console.log(repo.description);
+    if (repo.description == null) {
+      const newIssue = context.issue({
+        repo: repo.name,
+        owner: repo.owner.login,
+        title: "Warning: Repo missing description",
+        body: "Company policy requires that all repos have a description."
+      });
+      return context.octokit.issues.create(newIssue)
+    };
+  });
+  // ---------- END REPO EVENTS ----------
 };
